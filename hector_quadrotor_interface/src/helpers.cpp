@@ -54,13 +54,21 @@ bool getMassAndInertia(const ros::NodeHandle &nh, double &mass, double inertia[3
     return false;
   }
 
-  urdf::InertialSharedPtr inertial = model->getRoot()->inertial;
+  urdf::LinkConstSharedPtr root = model->getRoot();
+  urdf::InertialSharedPtr inertial = root->inertial;
   if (!inertial || !inertial->mass || !inertial->ixx || !inertial->iyy || !inertial->izz)
   {
-    ROS_ERROR_STREAM(
-        "getMassAndInertia() requires inertial information stored on the root link " << nh.getNamespace() <<
-        "/robot_description");
-    return false;
+    urdf::LinkSharedPtr child = root->child_links[0];
+    if (child != 0) {
+      inertial = child->inertial;
+    }
+    if (!inertial || !inertial->mass || !inertial->ixx || !inertial->iyy || !inertial->izz)
+    {
+      ROS_ERROR_STREAM(
+          "getMassAndInertia() requires inertial information stored on the root link or its first child " << nh.getNamespace() <<
+          "/robot_description");
+      return false;
+    }
   }
 
   mass = inertial->mass;
